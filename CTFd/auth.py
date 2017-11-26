@@ -29,7 +29,9 @@ def confirm_user(data=None):
         except BadTimeSignature:
             return render_template('confirm.html', errors=['Your confirmation link has expired'])
         except BadSignature:
-            return render_template('confirm.html', errors=['Your confirmation link seems wrong'])
+            return render_template('confirm.html', errors=['Your confirmation link could not be validated. Please try again.'])
+        except TypeError:
+            return render_template('confirm.html', errors=['Your confirmation link could not be validated. Please try again.'])
         team = Teams.query.filter_by(email=email).first_or_404()
         team.verified = True
         db.session.commit()
@@ -84,9 +86,11 @@ def reset_password(data=None):
             s = TimedSerializer(app.config['SECRET_KEY'])
             name = s.loads(utils.base64decode(data, urldecode=True), max_age=1800)
         except BadTimeSignature:
-            return render_template('reset_password.html', errors=['Your link has expired'])
-        except:
-            return render_template('reset_password.html', errors=['Your link appears broken, please try again'])
+            return render_template('reset_password.html', errors=['Your password reset request has expired'])
+        except BadSignature:
+            return render_template('reset_password.html', errors=['Your password reset request could not be validated. Please try again.'])
+        except TypeError:
+            return render_template('confirm.html', errors=['Your password reset request could not be validated. Please try again.'])
         team = Teams.query.filter_by(name=name).first_or_404()
         team.password = bcrypt_sha256.encrypt(request.form['password'].strip())
         db.session.commit()

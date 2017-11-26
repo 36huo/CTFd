@@ -9,6 +9,7 @@ from CTFd.utils import base64encode, base64decode
 from CTFd.utils import check_email_format
 from freezegun import freeze_time
 from mock import patch
+from nose.tools import assert_raises
 import json
 import six
 
@@ -71,17 +72,40 @@ def test_base64decode():
     if six.PY2:
         assert base64decode('YWJjMTIz') == 'abc123'
         assert base64decode(unicode('YWJjMTIz')) == 'abc123'
+        assert_raises(TypeError, base64decode, 'YWJjMTIasdfawefasdfas')
+
+        assert base64decode('YWJjMTIz==') == 'abc123'
+        assert base64decode(unicode('YWJjMTIz==')) == 'abc123'
+
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ='), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
         assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D'), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ'), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+
+        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8=') == 'user+user@ctfd.io'
+        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8%3D', urldecode=True) == 'user+user@ctfd.io'
+        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8', urldecode=True) == 'user+user@ctfd.io'
+
         assert base64decode('8J-Yhg==') == '😆'
+        assert base64decode('8J-Yhg') == '😆'
         assert base64decode('8J-Yhg%3D%3D', urldecode=True) == '😆'
+        assert base64decode('8J-Yhg', urldecode=True) == '😆'
     else:
         assert base64decode('YWJjMTIz') == 'abc123'
         assert base64decode('YWJjMTIz') == 'abc123'
-        assert base64decode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D', urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert_raises(TypeError, base64decode, 'YWJjMTIasdfawefasdfas')
+
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ='), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ%3D'), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+        assert base64decode(unicode('InRlc3RAbWFpbGluYXRvci5jb20iLkRHeGVvQS5sQ3NzVTNNMlF1QmZvaE8tRnRkZ0RRTEtiVTQ'), urldecode=True) == '"test@mailinator.com".DGxeoA.lCssU3M2QuBfohO-FtdgDQLKbU4'
+
         assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8=') == 'user+user@ctfd.io'
         assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8%3D', urldecode=True) == 'user+user@ctfd.io'
+        assert base64decode('dXNlcit1c2VyQGN0ZmQuaW8', urldecode=True) == 'user+user@ctfd.io'
+
         assert base64decode('8J-Yhg==') == '😆'
+        assert base64decode('8J-Yhg') == '😆'
         assert base64decode('8J-Yhg%3D%3D', urldecode=True) == '😆'
+        assert base64decode('8J-Yhg', urldecode=True) == '😆'
 
 
 def test_override_template():

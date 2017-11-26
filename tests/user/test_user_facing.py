@@ -530,6 +530,89 @@ def test_user_can_confirm_email(mock_smtp):
 
 @patch('smtplib.SMTP')
 @freeze_time("2012-01-14 03:21:34")
+def test_user_can_confirm_email_with_token_missing_padding(mock_smtp):
+    '''Test that a user is capable of confirming their email address even if their token is missing padding'''
+    app = create_ctfd()
+    with app.app_context():
+        # Set CTFd to only allow confirmed users and send emails
+        set_config('verify_emails', True)
+        set_config('mail_server', 'localhost')
+        set_config('mail_port', 25)
+        set_config('mail_username', 'username')
+        set_config('mail_password', 'password')
+
+        register_user(app, name="user1", email="user@user.com")
+
+        # Teams are not verified by default
+        team = Teams.query.filter_by(email='user@user.com').first()
+        assert team.verified == False
+
+        client = login_as_user(app, name="user1", password="password")
+
+        # smtp.sendmail was called
+        mock_smtp.return_value.sendmail.assert_called()
+
+        with client.session_transaction() as sess:
+            data = {
+                "nonce": sess.get('nonce')
+            }
+            r = client.get('/challenges')
+            assert r.location == "http://localhost/confirm"  # We got redirected to /confirm
+
+            # Use precalculated confirmation secret minus %3D or = sign
+            r = client.get('http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENHczWTJCVVJwdWc')
+            assert r.location == 'http://localhost/challenges'
+
+            # The team is now verified
+            team = Teams.query.filter_by(email='user@user.com').first()
+            assert team.verified == True
+    destroy_ctfd(app)
+
+
+@patch('smtplib.SMTP')
+@freeze_time("2012-01-14 03:21:34")
+def test_user_cannot_confirm_email_with_invalid_token(mock_smtp):
+    '''Test that a user cannot confirm their email address with an invalid token'''
+    app = create_ctfd()
+    with app.app_context():
+        # Set CTFd to only allow confirmed users and send emails
+        set_config('verify_emails', True)
+        set_config('mail_server', 'localhost')
+        set_config('mail_port', 25)
+        set_config('mail_username', 'username')
+        set_config('mail_password', 'password')
+
+        register_user(app, name="user1", email="user@user.com")
+
+        # Teams are not verified by default
+        team = Teams.query.filter_by(email='user@user.com').first()
+        assert team.verified == False
+
+        client = login_as_user(app, name="user1", password="password")
+
+        # smtp.sendmail was called
+        mock_smtp.return_value.sendmail.assert_called()
+
+        with client.session_transaction() as sess:
+            data = {
+                "nonce": sess.get('nonce')
+            }
+            r = client.get('/challenges')
+            assert r.location == "http://localhost/confirm"  # We got redirected to /confirm
+
+            # Use precalculated confirmation secret missing some data
+            r = client.get('http://localhost/confirm/InVzZXJAdXNlci5jb20iLkFmS0dQZy5kLUJnVkgwaUhadzFHaXVENH')
+            assert r.status_code == 200
+            assert r.location == None
+
+            # The team is NOT verified
+            team = Teams.query.filter_by(email='user@user.com').first()
+            assert team.verified == False
+    destroy_ctfd(app)
+
+
+@patch('smtplib.SMTP')
+@freeze_time("2012-01-14 03:21:34")
 def test_user_can_reset_password(mock_smtp):
     '''Test that a user is capable of resetting their password'''
     from email.mime.text import MIMEText

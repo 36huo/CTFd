@@ -652,6 +652,8 @@ def base64decode(s, urldecode=False):
         # Python 2 support because the base64 module doesnt like unicode
         s = str(s)
 
+    # Restore any missing padding
+    s = s + '=' * (-len(s) % 4)
     decoded = base64.urlsafe_b64decode(s)
     if six.PY3:
         decoded = decoded.decode('utf-8')
